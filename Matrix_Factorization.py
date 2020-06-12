@@ -36,7 +36,7 @@ test_df = (sql.read
     .option("sep", "\x01")
     .load(datafile_val,  inferSchema="true")
     .toDF("text_tokens", "hashtags", "tweet_id", "present_media", "present_links", "present_domains","tweet_type", "language", "tweet_timestamp", "engaged_with_user_id", "engaged_with_user_follower_count","engaged_with_user_following_count", "engaged_with_user_is_verified", "engaged_with_user_account_creation",\
-               "engaging_user_id", "engaging_user_follower_count", "engaging_user_following_count", "engaging_user_is_verified","engaging_user_account_creation", "engaged_follows_engaging", "reply_timestamp", "retweet_timestamp", "retweet_with_comment_timestamp", "like_timestamp"))
+               "engaging_user_id", "engaging_user_follower_count", "engaging_user_following_count", "engaging_user_is_verified","engaging_user_account_creation", "engaged_follows_engaging"))
 
 user_indexer = StringIndexer(inputCol="engaging_user_id", outputCol="user")
 tweet_indexer = StringIndexer(inputCol="tweet_id", outputCol="tweet")
@@ -57,9 +57,11 @@ train_df = train_df.withColumn("like", encode_response("like_timestamp"))
 test_df = test_df.withColumn("like", encode_response("like_timestamp"))
 
 
-training = train_df.select("user", "tweet", "like")
-training = test_df.select("user", "tweet", "like")
+train_df = train_df.select("user", "tweet", "like")
 
+(training, val) = train_df.randomSplit([0.8, 0.2])
+
+test = test_df.select(("user", "tweet", "like"))
 
 als = ALS(maxIter=10, regParam=0.01, rank=20, 
           userCol="user", itemCol="tweet", ratingCol="like",
@@ -67,7 +69,7 @@ als = ALS(maxIter=10, regParam=0.01, rank=20,
 model = als.fit(training)
 
 # Evaluate the model by computing the RMSE on the test data
-predictions = model.transform(test)
+predictions = model.transform(val)
 
 predictionAndLabels = predictions.rdd.map(lambda r: (r.prediction, r.like))
 
@@ -77,6 +79,11 @@ metrics = BinaryClassificationMetrics(predictionAndLabels)
 
 # Area under precision-recall curve
 print("Area under PR = %s" % metrics.areaUnderPR)
+
+
+predictions = model.transform(val)
+
+predictions.coalesce(1).saveAsTextFile("hdfs:///user/e1553958/result.txt")
 
 with open("AUC-PR.txt", "w") as file:
     file.write(metrics.areaUnderPR)
