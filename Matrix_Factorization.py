@@ -84,6 +84,6 @@ print("Area under PR = %s" % metrics.areaUnderPR)
 #predictions = model.transform(val)
 
 #predictions.coalesce(1).saveAsTextFile("hdfs:///user/e1553958/result.txt")
+val_result = sc.parallelize([metrics.areaUnderPR])
 
-with open("AUC-PR.txt", "w") as file:
-    file.write(metrics.areaUnderPR)
+a.coalesce(1).saveAsTextFile("hdfs:///user/e1553958/result_twitter)
