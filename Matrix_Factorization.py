@@ -103,4 +103,4 @@ for target_col in target_cols:
 
 results = sc.parallelize(metrics.items())
 
-results.coalesce(1).saveAsTextFile("hdfs:///user/e1553958/result_twitter)
+results.coalesce(1).saveAsTextFile("hdfs:///user/e1553958/result_twitter")
