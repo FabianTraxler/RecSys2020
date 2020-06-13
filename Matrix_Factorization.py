@@ -1,5 +1,6 @@
+
 import pyspark
-from pyspark import SQLContext
+from pyspark import SQLContext, SparkConf
 
 from pyspark.ml import Pipeline
 from pyspark.ml.feature import StringIndexer
@@ -13,7 +14,15 @@ from pyspark.sql.functions import  when, col
 
 
 
-sc = pyspark.SparkContext()
+conf = SparkConf().setAppName("RecSys Challenge").setMaster("yarn")
+conf = (conf.set("deploy-mode","cluster")
+       .set("spark.driver.memory","50g")
+       .set("spark.executor.memory","50g")
+       .set("spark.driver.cores","4")
+       .set("spark.num.executors","100")
+       .set("spark.executor.cores","4"))
+
+sc = pyspark.SparkContext(conf=conf)
 sql = SQLContext(sc)
 
 
@@ -46,44 +55,48 @@ train_df = pipeline.fit(train_df).transform(train_df)
 
 #test_df = pipeline.transform(test_df)
 
+target_cols = ["reply_timestamp", "retweet_timestamp", "retweet_with_comment_timestamp", "like_timestamp"]
 
 def encode_response(x):
     return when(col(x).isNull(), float(0)).otherwise(float(1))
 
-def implicit_feedback(creation_time, interaction_time):
-    return when(col(interaction_time).isNull(), float(0)).otherwise(col(interaction_time)-col(creation_time))
+#def implicit_feedback(creation_time, interaction_time):
+#    return when(col(interaction_time).isNull(), float(0)).otherwise(col(interaction_time)-col(creation_time))
 
-train_df = train_df.withColumn("like", encode_response("like_timestamp"))
-#test_df = test_df.withColumn("like", encode_response("like_timestamp"))
+for target_col in target_cols:
+    df = df.withColumn(target_col[:-10], encode_response(target_col))
 
+df = df.select("user", "tweet", "reply", "retweet", "retweet_with_comment", "like")
 
-train_df = train_df.select("user", "tweet", "like")
-
-(training, val) = train_df.randomSplit([0.8, 0.2])
-
+(training, test) = df.randomSplit([0.8, 0.2])
 #test = test_df.select(("user", "tweet", "like"))
+models = {}
 
-als = ALS(maxIter=10, regParam=0.01, rank=20, 
-          userCol="user", itemCol="tweet", ratingCol="like",
-          coldStartStrategy="drop", implicitPrefs=True)
-model = als.fit(training)
+maxIter=20
+regParam=0.001
+rank=20
 
-# Evaluate the model by computing the RMSE on the test data
-predictions = model.transform(val)
-
-predictionAndLabels = predictions.rdd.map(lambda r: (r.prediction, r.like))
-
-
-# Instantiate metrics object
-metrics = BinaryClassificationMetrics(predictionAndLabels)
-
-# Area under precision-recall curve
-print("Area under PR = %s" % metrics.areaUnderPR)
+for target_col in target_cols:
+    target_col = target_col[:-10]
+    print("Training Model for {}".format(target_col))
+    models[target_col] = ALS(maxIter=maxIter, regParam=regParam, rank=rank, 
+          userCol="user", itemCol="tweet", ratingCol=target_col,
+          coldStartStrategy="drop", implicitPrefs=True).fit(training)
+    
+    # Evaluate the model by computing the RMSE on the test data
+    test = models[target_col].transform(test)
+    test = test.withColumnRenamed("prediction", target_col+"_pred", )
 
 
-#predictions = model.transform(val)
+metrics = {}
 
-#predictions.coalesce(1).saveAsTextFile("hdfs:///user/e1553958/result.txt")
-val_result = sc.parallelize([metrics.areaUnderPR])
+for target_col in target_cols:
+    target_col = target_col[:-10]
+    predictionAndLabels = test.rdd.map(lambda r: (r[target_col+"_pred"], r[target_col]))
+    metric = BinaryClassificationMetrics(predictionAndLabels)
+    metrics[target_col] = metric.areaUnderPR
+    print("For {}: Area under PR = {}".format(target_col, metrics[target_col]))
 
-a.coalesce(1).saveAsTextFile("hdfs:///user/e1553958/result_twitter)
+results = sc.parallelize(metrics.items())
+
+results.coalesce(1).saveAsTextFile("hdfs:///user/e1553958/result_twitter)
