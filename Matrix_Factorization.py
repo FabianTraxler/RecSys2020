@@ -14,9 +14,8 @@ from pyspark.sql.functions import  when, col
 
 
 
-conf = SparkConf().setAppName("RecSys Challenge").setMaster("yarn")
-conf = (conf.set("deploy-mode","cluster")
-       .set("spark.driver.memory","100g")
+conf = SparkConf().setAppName("RecSys_Challenge_2020").setMaster("local[*]")
+conf = (conf.set("spark.driver.memory","100g")
        .set("spark.executor.memory","100g")
        .set("spark.driver.cores","1")
        .set("spark.num.executors","200")
