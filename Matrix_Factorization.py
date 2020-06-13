@@ -15,12 +15,12 @@ from pyspark.sql.functions import  when, col
 
 
 conf = SparkConf().setAppName("RecSys_Challenge_2020")
-#conf = (conf.set("spark.driver.memory","200g")
-#       .set("spark.executor.memory","200g")
-#       .set("spark.driver.cores","1")
-#       .set("spark.num.executors","200")
-#       .set("spark.executor.cores","1")
-#       .set("spark.driver.maxResultSize", "100g"))
+conf = (conf.set("spark.driver.memory","200g")
+       .set("spark.executor.memory","200g")
+       .set("spark.driver.cores","1")
+       .set("spark.num.executors","200")
+       .set("spark.executor.cores","1")
+       .set("spark.driver.maxResultSize", "0"))
 
 sc = pyspark.SparkContext(conf=conf)
 sql = SQLContext(sc)
