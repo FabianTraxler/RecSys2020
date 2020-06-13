@@ -26,9 +26,6 @@ conf = (conf.set("deploy-mode","cluster")
 sc = pyspark.SparkContext(conf=conf)
 sql = SQLContext(sc)
 
-sc = pyspark.SparkContext(conf=conf)
-sql = SQLContext(sc)
-
 
 datafile = "hdfs:///user/pknees/RSC20/training.tsv"
 
