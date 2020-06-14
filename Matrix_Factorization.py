@@ -10,7 +10,7 @@ from pyspark.ml.recommendation import ALS
 from pyspark.sql import Row
 
 from pyspark.mllib.evaluation import BinaryClassificationMetrics
-from pyspark.sql.functions import  when, col
+from pyspark.sql.functions import  when, col, rand, isnan
 
 
 conf = SparkConf().setAppName("RecSys-Challenge-2020").setMaster("yarn")
@@ -60,7 +60,7 @@ train_df = train_df.join(tweet2id, col("tweet_id") == col("tweet_id_str"))
 train_df = train_df.join(user2id, col("engaging_user_id") == col("user_id_str"))
 train_df = train_df.select("user", "tweet", "reply_timestamp", "retweet_timestamp", "retweet_with_comment_timestamp", "like_timestamp")
 
-target_cols = ["reply_timestamp", "retweet_timestamp", "retweet_with_comment_timestamp", "like_timestamp"]
+target_cols = ["like_timestamp"]
 
 def encode_response(x):
     return when(col(x).isNull(), float(0)).otherwise(float(1))
@@ -70,11 +70,48 @@ for target_col in target_cols:
 
 train_df = train_df.select("user", "tweet", "reply", "retweet", "retweet_with_comment", "like")
 
-(training, test) = train_df.randomSplit([0.8, 0.2])
-#test = test_df.select(("user", "tweet", "like"))
+datafile_test = "hdfs:///user/pknees/RSC20/test.tsv"
+
+test_df = (sql.read
+    .format("csv")
+    .option("header", "false")
+    .option("sep", "\x01")
+    .load(datafile_test,  inferSchema="true")
+    .toDF("text_tokens", "hashtags", "tweet_id", "present_media", "present_links", "present_domains","tweet_type", "language", "tweet_timestamp", "engaged_with_user_id", "engaged_with_user_follower_count","engaged_with_user_following_count", "engaged_with_user_is_verified", "engaged_with_user_account_creation",\
+               "engaging_user_id", "engaging_user_follower_count", "engaging_user_following_count", "engaging_user_is_verified","engaging_user_account_creation", "engaged_follows_engaging"))
+
+test_df = test_df.select("tweet_id","engaging_user_id")
+
+tweet2id_new = test_df.select("tweet_id").rdd.map(lambda x: x[0]).distinct().zipWithUniqueId()
+user2id_new = test_df.select("engaging_user_id").rdd.map(lambda x: x[0]).distinct().zipWithUniqueId()
+tweet2id_new = tweet2id_new.toDF().withColumnRenamed("_1", "tweet_id_str_new").withColumnRenamed("_2", "tweet_new")
+user2id_new = user2id_new.toDF().withColumnRenamed("_1", "user_id_str_new").withColumnRenamed("_2", "user_new")
+
+test_df = test_df.join(tweet2id_new, col("tweet_id") == col("tweet_id_str_new"), "left_outer")
+test_df = test_df.join(user2id_new, col("engaging_user_id") == col("user_id_str_new"), "left_outer")
+
+test_df = test_df.join(tweet2id, col("tweet_id") == col("tweet_id_str"), "left_outer")
+test_df = test_df.join(user2id, col("engaging_user_id") == col("user_id_str"), "left_outer")
+
+
+max_user_id = user2id.groupBy().max("user").collect()[0][0]
+max_tweet_id = tweet2id.groupBy().max("tweet").collect()[0][0]
+
+def create_index(old, new):
+    if old == "user":
+        max_val = max_user_id
+    elif old == "tweet":
+        max_val = max_tweet_id
+    return when(col(old).isNull(), col(new) + max_val).otherwise(col(old))
+
+
+test_df = test_df.withColumn("user", create_index("user", "user_new"))
+test_df = test_df.withColumn("tweet", create_index("tweet", "tweet_new"))
+
+
 models = {}
 
-maxIter=10
+maxIter=20
 regParam=0.001
 rank=20
 
@@ -83,22 +120,18 @@ for target_col in target_cols:
     print("Training Model for {}".format(target_col))
     models[target_col] = ALS(maxIter=maxIter, regParam=regParam, rank=rank, 
           userCol="user", itemCol="tweet", ratingCol=target_col,
-          coldStartStrategy="drop", implicitPrefs=True).fit(training)
+          coldStartStrategy="nan", implicitPrefs=True).fit(train_df)
     
     # Evaluate the model by computing the RMSE on the test data
-    test = models[target_col].transform(test)
-    test = test.withColumnRenamed("prediction", target_col+"_pred", )
+    test_df = models[target_col].transform(test_df)
+    test_df = test_df.withColumnRenamed("prediction", target_col )
+    
 
 
-metrics = {}
+def fallback_prediction(x):
+    return when(col(x).isNull(), rand()).otherwise(col(x))
 
 for target_col in target_cols:
     target_col = target_col[:-10]
-    predictionAndLabels = test.rdd.map(lambda r: (r[target_col+"_pred"], r[target_col]))
-    metric = BinaryClassificationMetrics(predictionAndLabels)
-    metrics[target_col] = metric.areaUnderPR
-    print("For {}: Area under PR = {}".format(target_col, metrics[target_col]))
-
-results = sc.parallelize(metrics.items())
-
-results.coalesce(1).saveAsTextFile("hdfs:///user/e1553958/result_twitter")
+    test_df = test_df.withColumn(target_col, fallback_prediction(target_col))
+    test_df.select("tweet", "user",target_col ).write.option("header", "false").csv("hdfs:///user/e1553958/"+target_col)
