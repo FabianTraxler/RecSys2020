@@ -15,12 +15,12 @@ from pyspark.sql.functions import  when, col, rand, isnan
 
 conf = SparkConf().setAppName("RecSys-Challenge-Submission-Generation").setMaster("yarn")
 conf = (conf.set("deploy-mode","cluster")
-       .set("spark.driver.memory","100g")
-       .set("spark.executor.memory","100g")
+       .set("spark.driver.memory","50g")
+       .set("spark.executor.memory","50g")
        .set("spark.driver.cores","1")
-       .set("spark.num.executors","100")
+       .set("spark.num.executors","50")
        .set("spark.executor.cores","1")
-       .set("spark.driver.maxResultSize", "100g"))
+       .set("spark.driver.maxResultSize", "50g"))
 
 sc = pyspark.SparkContext(conf=conf)
 sql = SQLContext(sc)
