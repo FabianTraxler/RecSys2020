@@ -13,17 +13,14 @@ from pyspark.mllib.evaluation import BinaryClassificationMetrics
 from pyspark.sql.functions import  when, col
 
 
-
-conf = SparkConf().setAppName("RecSys_Challenge_2020")
-conf = (conf.set("spark.driver.memory","200g")
-       .set("spark.executor.memory","200g")
+conf = SparkConf().setAppName("RecSys Challenge").setMaster("yarn")
+conf = (conf.set("deploy-mode","cluster")
+       .set("spark.driver.memory","100g")
+       .set("spark.executor.memory","100g")
        .set("spark.driver.cores","20")
-       .set("spark.num.executors","100")
-       .set("spark.executor.cores","24")
-       .set("spark.driver.maxResultSize", "0")
-       .set("spark.storage.memoryFraction", "0.2")
-       .set("spark.memory.offHeap.enabled","true")
-       .set("spark.memory.offHeap.size","100g") )
+       .set("spark.num.executors","200")
+       .set("spark.executor.cores","20")
+       .set("spark.driver.maxResultSize", "100g"))
 
 sc = pyspark.SparkContext(conf=conf)
 sql = SQLContext(sc)
@@ -40,7 +37,7 @@ train_df = (sql.read
                "engaging_user_id", "engaging_user_follower_count", "engaging_user_following_count", "engaging_user_is_verified","engaging_user_account_creation", "engaged_follows_engaging", "reply_timestamp", "retweet_timestamp", "retweet_with_comment_timestamp", "like_timestamp"))
 
 
-datafile_val = "hdfs:///user/pknees/RSC20/val.tsv"
+#datafile_val = "hdfs:///user/pknees/RSC20/val.tsv"
 
 #test_df = (sql.read
 #    .format("csv")
@@ -75,7 +72,7 @@ df = df.select("user", "tweet", "reply", "retweet", "retweet_with_comment", "lik
 #test = test_df.select(("user", "tweet", "like"))
 models = {}
 
-maxIter=20
+maxIter=10
 regParam=0.001
 rank=20
 
