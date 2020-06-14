@@ -15,8 +15,8 @@ from pyspark.sql.functions import  when, col
 
 conf = SparkConf().setAppName("RecSys-Challenge-2020").setMaster("yarn")
 conf = (conf.set("deploy-mode","cluster")
-       .set("spark.driver.memory","10g")
-       .set("spark.executor.memory","10g")
+       .set("spark.driver.memory","100g")
+       .set("spark.executor.memory","100g")
        .set("spark.driver.cores","1")
        .set("spark.num.executors","200")
        .set("spark.executor.cores","1")
@@ -33,6 +33,7 @@ train_df = (sql.read
     .option("header", "false")
     .option("sep", "\x01")
     .load(datafile,  inferSchema="true")
+    .repartition(2000)
     .toDF("text_tokens", "hashtags", "tweet_id", "present_media", "present_links", "present_domains","tweet_type", "language", "tweet_timestamp", "engaged_with_user_id", "engaged_with_user_follower_count","engaged_with_user_following_count", "engaged_with_user_is_verified", "engaged_with_user_account_creation",\
                "engaging_user_id", "engaging_user_follower_count", "engaging_user_following_count", "engaging_user_is_verified","engaging_user_account_creation", "engaged_follows_engaging", "reply_timestamp", "retweet_timestamp", "retweet_with_comment_timestamp", "like_timestamp"))
 
