@@ -18,7 +18,7 @@ conf = (conf.set("deploy-mode","cluster")
        .set("spark.driver.memory","100g")
        .set("spark.executor.memory","100g")
        .set("spark.driver.cores","1")
-       .set("spark.num.executors","200")
+       .set("spark.num.executors","30")
        .set("spark.executor.cores","1")
        .set("spark.driver.maxResultSize", "100g"))
 
@@ -33,9 +33,11 @@ train_df = (sql.read
     .option("header", "false")
     .option("sep", "\x01")
     .load(datafile,  inferSchema="true")
-    .repartition(2000)
+    .repartition(1000)
     .toDF("text_tokens", "hashtags", "tweet_id", "present_media", "present_links", "present_domains","tweet_type", "language", "tweet_timestamp", "engaged_with_user_id", "engaged_with_user_follower_count","engaged_with_user_following_count", "engaged_with_user_is_verified", "engaged_with_user_account_creation",\
                "engaging_user_id", "engaging_user_follower_count", "engaging_user_following_count", "engaging_user_is_verified","engaging_user_account_creation", "engaged_follows_engaging", "reply_timestamp", "retweet_timestamp", "retweet_with_comment_timestamp", "like_timestamp"))
+
+train_df = train_df.select("engaging_user_id", "tweet_id", "reply_timestamp", "retweet_timestamp", "retweet_with_comment_timestamp", "like_timestamp")
 
 
 #datafile_val = "hdfs:///user/pknees/RSC20/val.tsv"
@@ -48,28 +50,27 @@ train_df = (sql.read
 #    .toDF("text_tokens", "hashtags", "tweet_id", "present_media", "present_links", "present_domains","tweet_type", "language", "tweet_timestamp", "engaged_with_user_id", "engaged_with_user_follower_count","engaged_with_user_following_count", "engaged_with_user_is_verified", "engaged_with_user_account_creation",\
 #               "engaging_user_id", "engaging_user_follower_count", "engaging_user_following_count", "engaging_user_is_verified","engaging_user_account_creation", "engaged_follows_engaging"))
 
-user_indexer = StringIndexer(inputCol="engaging_user_id", outputCol="user")
-tweet_indexer = StringIndexer(inputCol="tweet_id", outputCol="tweet")
+tweet2id = train_df.select("tweet_id").rdd.map(lambda x: x[0]).distinct().zipWithUniqueId()
+user2id = train_df.select("engaging_user_id").rdd.map(lambda x: x[0]).distinct().zipWithUniqueId()
 
-pipeline = Pipeline(stages=[user_indexer, tweet_indexer])
-train_df = pipeline.fit(train_df).transform(train_df)
+tweet2id = tweet2id.toDF().withColumnRenamed("_1", "tweet_id_str").withColumnRenamed("_2", "tweet")
+user2id = user2id.toDF().withColumnRenamed("_1", "user_id_str").withColumnRenamed("_2", "user")
 
-#test_df = pipeline.transform(test_df)
+train_df = train_df.join(tweet2id, col("tweet_id") == col("tweet_id_str"))
+train_df = train_df.join(user2id, col("engaging_user_id") == col("user_id_str"))
+train_df = train_df.select("user", "tweet", "reply_timestamp", "retweet_timestamp", "retweet_with_comment_timestamp", "like_timestamp")
 
 target_cols = ["reply_timestamp", "retweet_timestamp", "retweet_with_comment_timestamp", "like_timestamp"]
 
 def encode_response(x):
     return when(col(x).isNull(), float(0)).otherwise(float(1))
 
-#def implicit_feedback(creation_time, interaction_time):
-#    return when(col(interaction_time).isNull(), float(0)).otherwise(col(interaction_time)-col(creation_time))
-
 for target_col in target_cols:
-    df = df.withColumn(target_col[:-10], encode_response(target_col))
+    train_df = train_df.withColumn(target_col[:-10], encode_response(target_col))
 
-df = df.select("user", "tweet", "reply", "retweet", "retweet_with_comment", "like")
+train_df = train_df.select("user", "tweet", "reply", "retweet", "retweet_with_comment", "like")
 
-(training, test) = df.randomSplit([0.8, 0.2])
+(training, test) = train_df.randomSplit([0.8, 0.2])
 #test = test_df.select(("user", "tweet", "like"))
 models = {}
 
