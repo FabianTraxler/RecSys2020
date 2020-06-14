@@ -68,7 +68,7 @@ def encode_response(x):
 for target_col in target_cols:
     train_df = train_df.withColumn(target_col[:-10], encode_response(target_col))
 
-train_df = train_df.select("user", "tweet", "reply", "retweet", "retweet_with_comment", "like")
+train_df = train_df.select("user", "tweet", "like")
 
 datafile_test = "hdfs:///user/pknees/RSC20/test.tsv"
 
