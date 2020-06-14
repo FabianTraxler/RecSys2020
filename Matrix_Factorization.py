@@ -15,12 +15,12 @@ from pyspark.sql.functions import  when, col, rand, isnan
 
 conf = SparkConf().setAppName("RecSys-Challenge-Submission-Generation").setMaster("yarn")
 conf = (conf.set("deploy-mode","cluster")
-       .set("spark.driver.memory","50g")
-       .set("spark.executor.memory","50g")
+       .set("spark.driver.memory","100g")
+       .set("spark.executor.memory","100g")
        .set("spark.driver.cores","1")
        .set("spark.num.executors","100")
        .set("spark.executor.cores","1")
-       .set("spark.driver.maxResultSize", "50g"))
+       .set("spark.driver.maxResultSize", "100g"))
 
 sc = pyspark.SparkContext(conf=conf)
 sql = SQLContext(sc)
@@ -33,7 +33,7 @@ train_df = (sql.read
     .option("header", "false")
     .option("sep", "\x01")
     .load(datafile,  inferSchema="true")
-    .limit(10)
+    .limit(10000)
     #.repartition(1000)
     .toDF("text_tokens", "hashtags", "tweet_id", "present_media", "present_links", "present_domains","tweet_type", "language", "tweet_timestamp", "engaged_with_user_id", "engaged_with_user_follower_count","engaged_with_user_following_count", "engaged_with_user_is_verified", "engaged_with_user_account_creation",\
                "engaging_user_id", "engaging_user_follower_count", "engaging_user_following_count", "engaging_user_is_verified","engaging_user_account_creation", "engaged_follows_engaging", "reply_timestamp", "retweet_timestamp", "retweet_with_comment_timestamp", "like_timestamp"))
@@ -69,7 +69,7 @@ val_df = (sql.read
     .option("header", "false")
     .option("sep", "\x01")
     .load(datafile_val,  inferSchema="true")
-    .limit(10)
+    .limit(10000)
     .toDF("text_tokens", "hashtags", "tweet_id", "present_media", "present_links", "present_domains","tweet_type", "language", "tweet_timestamp", "engaged_with_user_id", "engaged_with_user_follower_count","engaged_with_user_following_count", "engaged_with_user_is_verified", "engaged_with_user_account_creation",\
                "engaging_user_id", "engaging_user_follower_count", "engaging_user_following_count", "engaging_user_is_verified","engaging_user_account_creation", "engaged_follows_engaging"))
 
@@ -96,7 +96,7 @@ test_df = (sql.read
     .option("header", "false")
     .option("sep", "\x01")
     .load(datafile_test,  inferSchema="true")
-    .limit(10)
+    .limit(10000)
     .toDF("text_tokens", "hashtags", "tweet_id", "present_media", "present_links", "present_domains","tweet_type", "language", "tweet_timestamp", "engaged_with_user_id", "engaged_with_user_follower_count","engaged_with_user_following_count", "engaged_with_user_is_verified", "engaged_with_user_account_creation",\
                "engaging_user_id", "engaging_user_follower_count", "engaging_user_following_count", "engaging_user_is_verified","engaging_user_account_creation", "engaged_follows_engaging"))
 
@@ -131,9 +131,9 @@ test_df = test_df.withColumn("tweet", create_index("tweet", "tweet_new"))
 
 models = {}
 
-maxIter=20
+maxIter=10
 regParam=0.001
-rank=20
+rank=15
 
 for target_col in target_cols:
     target_col = target_col[:-10]
@@ -145,6 +145,8 @@ for target_col in target_cols:
     # Evaluate the model by computing the RMSE on the test data
     test_df = models[target_col].transform(test_df)
     test_df = test_df.withColumnRenamed("prediction", target_col )
+    val_df = models[target_col].transform(val_df)
+    val_df = val_df.withColumnRenamed("prediction", target_col )
     
 
 
@@ -154,4 +156,6 @@ def fallback_prediction(x):
 for target_col in target_cols:
     target_col = target_col[:-10]
     test_df = test_df.withColumn(target_col, fallback_prediction(target_col))
-    test_df.select("tweet", "user",target_col ).write.option("header", "false").csv("hdfs:///user/e1553958/"+target_col)
+    test_df.select("tweet", "user",target_col ).write.option("header", "false").csv("hdfs:///user/e1553958/"+target_col+"_test")
+    val_df = val_df.withColumn(target_col, fallback_prediction(target_col))
+    val_df.select("tweet", "user",target_col ).write.option("header", "false").csv("hdfs:///user/e1553958/"+target_col+"_val")
