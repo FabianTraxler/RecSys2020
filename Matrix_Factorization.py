@@ -13,13 +13,13 @@ from pyspark.mllib.evaluation import BinaryClassificationMetrics
 from pyspark.sql.functions import  when, col
 
 
-conf = SparkConf().setAppName("RecSys Challenge").setMaster("yarn")
+conf = SparkConf().setAppName("RecSys-Challenge-2020").setMaster("yarn")
 conf = (conf.set("deploy-mode","cluster")
-       .set("spark.driver.memory","100g")
-       .set("spark.executor.memory","100g")
-       .set("spark.driver.cores","20")
+       .set("spark.driver.memory","10g")
+       .set("spark.executor.memory","10g")
+       .set("spark.driver.cores","1")
        .set("spark.num.executors","200")
-       .set("spark.executor.cores","20")
+       .set("spark.executor.cores","1")
        .set("spark.driver.maxResultSize", "100g"))
 
 sc = pyspark.SparkContext(conf=conf)
