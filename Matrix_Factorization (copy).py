@@ -61,32 +61,6 @@ for target_col in target_cols:
 train_df = train_df.select("user", "tweet", "like","reply", "retweet", "retweet_with_comment" )
 
 
-datafile_val = "hdfs:///user/pknees/RSC20/val.tsv"
-
-val_df = (sql.read
-    .format("csv")
-    .option("header", "false")
-    .option("sep", "\x01")
-    .load(datafile_val,  inferSchema="true")
-    .toDF("text_tokens", "hashtags", "tweet_id", "present_media", "present_links", "present_domains","tweet_type", "language", "tweet_timestamp", "engaged_with_user_id", "engaged_with_user_follower_count","engaged_with_user_following_count", "engaged_with_user_is_verified", "engaged_with_user_account_creation",\
-               "engaging_user_id", "engaging_user_follower_count", "engaging_user_following_count", "engaging_user_is_verified","engaging_user_account_creation", "engaged_follows_engaging"))
-
-
-val_df = val_df.select("tweet_id","engaging_user_id")
-
-tweet2id_val = val_df.select("tweet_id").rdd.map(lambda x: x[0]).distinct().zipWithUniqueId()
-user2id_val = val_df.select("engaging_user_id").rdd.map(lambda x: x[0]).distinct().zipWithUniqueId()
-tweet2id_val = tweet2id_val.toDF().withColumnRenamed("_1", "tweet_id_str_val").withColumnRenamed("_2", "tweet_new")
-user2id_val = user2id_val.toDF().withColumnRenamed("_1", "user_id_str_val").withColumnRenamed("_2", "user_new")
-
-val_df = val_df.join(tweet2id_val, col("tweet_id") == col("tweet_id_str_val"), "left_outer")
-val_df = val_df.join(user2id_val, col("engaging_user_id") == col("user_id_str_val"), "left_outer")
-
-val_df = val_df.join(tweet2id, col("tweet_id") == col("tweet_id_str"), "left_outer")
-val_df = val_df.join(user2id, col("engaging_user_id") == col("user_id_str"), "left_outer")
-
-
-
 
 datafile_test = "hdfs:///user/pknees/RSC20/test.tsv"
 test_df = (sql.read
@@ -142,9 +116,6 @@ for target_col in target_cols:
     # Evaluate the model by computing the RMSE on the test data
     test_df = models[target_col].transform(test_df)
     test_df = test_df.withColumnRenamed("prediction", target_col )
-    val_df = models[target_col].transform(val_df)
-    val_df = val_df.withColumnRenamed("prediction", target_col )
-    
 
 
 def fallback_prediction(x):
@@ -154,5 +125,3 @@ for target_col in target_cols:
     target_col = target_col[:-10]
     test_df = test_df.withColumn(target_col, fallback_prediction(target_col))
     test_df.select("tweet", "user",target_col ).write.option("header", "false").csv("hdfs:///user/e1553958/"+target_col+"_test")
-    val_df = val_df.withColumn(target_col, fallback_prediction(target_col))
-    val_df.select("tweet", "user",target_col ).write.option("header", "false").csv("hdfs:///user/e1553958/"+target_col+"_val")
