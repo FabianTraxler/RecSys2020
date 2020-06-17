@@ -113,6 +113,8 @@ for target_col in target_cols:
           userCol="user", itemCol="tweet", ratingCol=target_col,
           coldStartStrategy="nan", implicitPrefs=True).fit(train_df)
     
+    models[target_col].save("hdfs:///user/e1553958/" + target_col + "_als_model")
+    
     # Evaluate the model by computing the RMSE on the test data
     test_df = models[target_col].transform(test_df)
     test_df = test_df.withColumnRenamed("prediction", target_col )
