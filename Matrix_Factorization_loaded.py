@@ -15,12 +15,12 @@ from pyspark.sql.functions import  when, col, rand, isnan
 
 conf = SparkConf().setAppName("RecSys-Challenge-Submission-Generation").setMaster("yarn")
 conf = (conf.set("deploy-mode","cluster")
-       .set("spark.driver.memory","50g")
-       .set("spark.executor.memory","50g")
+       .set("spark.driver.memory","100g")
+       .set("spark.executor.memory","100g")
        .set("spark.driver.cores","1")
-       .set("spark.num.executors","50")
-       .set("spark.executor.cores","1")
-       .set("spark.driver.maxResultSize", "50g"))
+       .set("spark.num.executors","100")
+       .set("spark.executor.cores","4")
+       .set("spark.driver.maxResultSize", "100g"))
 
 sc = pyspark.SparkContext(conf=conf)
 sql = SQLContext(sc)
@@ -38,12 +38,15 @@ train_df = (sql.read
 
 train_df = train_df.select("engaging_user_id", "tweet_id", "reply_timestamp", "retweet_timestamp", "retweet_with_comment_timestamp", "like_timestamp")
 
-
 tweet2id = train_df.select("tweet_id").rdd.map(lambda x: x[0]).distinct().zipWithUniqueId()
 user2id = train_df.select("engaging_user_id").rdd.map(lambda x: x[0]).distinct().zipWithUniqueId()
 
 tweet2id = tweet2id.toDF().withColumnRenamed("_1", "tweet_id_str").withColumnRenamed("_2", "tweet")
 user2id = user2id.toDF().withColumnRenamed("_1", "user_id_str").withColumnRenamed("_2", "user")
+
+
+target_cols = ["reply_timestamp", "retweet_timestamp", "retweet_with_comment_timestamp", "like_timestamp"]
+
 
 datafile_val = "hdfs:///user/pknees/RSC20/val.tsv"
 
@@ -97,7 +100,7 @@ for target_col in target_cols:
     print("Training Model for {}".format(target_col))
     models[target_col] = ALS(maxIter=maxIter, regParam=regParam, rank=rank, 
           userCol="user", itemCol="tweet", ratingCol=target_col,
-          coldStartStrategy="nan", implicitPrefs=True).load("hdfs:///user/e1553958/" + target_col + "_als_model")
+          coldStartStrategy="nan", implicitPrefs=True).load("hdfs:///user/e1553958/RecSys/models/" + target_col + "_als_model")
     
     
     # Evaluate the model by computing the RMSE on the test data
@@ -111,4 +114,4 @@ def fallback_prediction(x):
 for target_col in target_cols:
     target_col = target_col[:-10]
     val_df = val_df.withColumn(target_col, fallback_prediction(target_col))
-    val_df.select("tweet", "user",target_col ).write.option("header", "false").csv("hdfs:///user/e1553958/"+target_col+"_val")
+    val_df.select("tweet", "user",target_col ).write.option("header", "false").csv("hdfs:///user/e1553958/RecSys/val_result/"+target_col)

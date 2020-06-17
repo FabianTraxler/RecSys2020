@@ -61,43 +61,9 @@ for target_col in target_cols:
 train_df = train_df.select("user", "tweet", "like","reply", "retweet", "retweet_with_comment" )
 
 
-
-datafile_test = "hdfs:///user/pknees/RSC20/test.tsv"
-test_df = (sql.read
-    .format("csv")
-    .option("header", "false")
-    .option("sep", "\x01")
-    .load(datafile_test,  inferSchema="true")
-    .toDF("text_tokens", "hashtags", "tweet_id", "present_media", "present_links", "present_domains","tweet_type", "language", "tweet_timestamp", "engaged_with_user_id", "engaged_with_user_follower_count","engaged_with_user_following_count", "engaged_with_user_is_verified", "engaged_with_user_account_creation",\
-               "engaging_user_id", "engaging_user_follower_count", "engaging_user_following_count", "engaging_user_is_verified","engaging_user_account_creation", "engaged_follows_engaging"))
-
-test_df = test_df.select("tweet_id","engaging_user_id")
-
-tweet2id_test = test_df.select("tweet_id").rdd.map(lambda x: x[0]).distinct().zipWithUniqueId()
-user2id_test = test_df.select("engaging_user_id").rdd.map(lambda x: x[0]).distinct().zipWithUniqueId()
-tweet2id_test = tweet2id_test.toDF().withColumnRenamed("_1", "tweet_id_str_test").withColumnRenamed("_2", "tweet_new")
-user2id_test = user2id_test.toDF().withColumnRenamed("_1", "user_id_str_test").withColumnRenamed("_2", "user_new")
-
-test_df = test_df.join(tweet2id_test, col("tweet_id") == col("tweet_id_str_test"), "left_outer")
-test_df = test_df.join(user2id_test, col("engaging_user_id") == col("user_id_str_test"), "left_outer")
-
-test_df = test_df.join(tweet2id, col("tweet_id") == col("tweet_id_str"), "left_outer")
-test_df = test_df.join(user2id, col("engaging_user_id") == col("user_id_str"), "left_outer")
-
-
 max_user_id = user2id.groupBy().max("user").collect()[0][0]
 max_tweet_id = tweet2id.groupBy().max("tweet").collect()[0][0]
 
-def create_index(old, new):
-    if old == "user":
-        max_val = max_user_id
-    elif old == "tweet":
-        max_val = max_tweet_id
-    return when(col(old).isNull(), col(new) + max_val).otherwise(col(old))
-
-
-test_df = test_df.withColumn("user", create_index("user", "user_new"))
-test_df = test_df.withColumn("tweet", create_index("tweet", "tweet_new"))
 
 
 models = {}
@@ -113,17 +79,5 @@ for target_col in target_cols:
           userCol="user", itemCol="tweet", ratingCol=target_col,
           coldStartStrategy="nan", implicitPrefs=True).fit(train_df)
     
-    models[target_col].save("hdfs:///user/e1553958/" + target_col + "_als_model")
+    models[target_col].save("hdfs:///user/e1553958/RecSys/models/" + target_col + "_als_model")
     
-    # Evaluate the model by computing the RMSE on the test data
-    test_df = models[target_col].transform(test_df)
-    test_df = test_df.withColumnRenamed("prediction", target_col )
-
-
-def fallback_prediction(x):
-    return when(isnan(x), rand()).otherwise(col(x))
-
-for target_col in target_cols:
-    target_col = target_col[:-10]
-    test_df = test_df.withColumn(target_col, fallback_prediction(target_col))
-    test_df.select("tweet", "user",target_col ).write.option("header", "false").csv("hdfs:///user/e1553958/"+target_col+"_test")
