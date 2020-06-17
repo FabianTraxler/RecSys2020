@@ -6,7 +6,7 @@ from pyspark.ml import Pipeline
 from pyspark.ml.feature import StringIndexer
 
 from pyspark.ml.evaluation import RegressionEvaluator
-from pyspark.ml.recommendation import ALS
+from pyspark.ml.recommendation import ALS, ALSModel
 from pyspark.sql import Row
 
 from pyspark.mllib.evaluation import BinaryClassificationMetrics
@@ -98,9 +98,7 @@ rank=15
 for target_col in target_cols:
     target_col = target_col[:-10]
     print("Training Model for {}".format(target_col))
-    models[target_col] = ALS(maxIter=maxIter, regParam=regParam, rank=rank, 
-          userCol="user", itemCol="tweet", ratingCol=target_col,
-          coldStartStrategy="nan", implicitPrefs=True).load("hdfs:///user/e1553958/RecSys/models/" + target_col + "_als_model")
+    models[target_col] = ALSModel.load("hdfs:///user/e1553958/RecSys/models/" + target_col + "_als_model")
     
     
     # Evaluate the model by computing the RMSE on the test data
