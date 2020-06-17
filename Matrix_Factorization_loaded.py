@@ -72,7 +72,7 @@ val_df = val_df.join(user2id, col("engaging_user_id") == col("user_id_str"), "le
 
 
 max_user_id = user2id.groupBy().max("user").collect()[0][0]
-max_tweet_id = tweet2id.groupBy().max("tweet").collect()[0][0
+max_tweet_id = tweet2id.groupBy().max("tweet").collect()[0][0]
 
 def create_index(old, new):
     if old == "user":
