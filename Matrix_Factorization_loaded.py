@@ -112,4 +112,4 @@ def fallback_prediction(x):
 for target_col in target_cols:
     target_col = target_col[:-10]
     val_df = val_df.withColumn(target_col, fallback_prediction(target_col))
-    val_df.select("tweet", "user",target_col ).write.option("header", "false").csv("hdfs:///user/e1553958/RecSys/val_result/"+target_col)
+    val_df.select("tweet_id", "engaging_user_id",target_col ).write.option("header", "false").csv("hdfs:///user/e1553958/RecSys/val_result/"+target_col)

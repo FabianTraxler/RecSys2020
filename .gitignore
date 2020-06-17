@@ -5,3 +5,4 @@ val.tsv
 competition_test.tsv
 random_guess.csv
 random_prediction.csv
+val_result/
