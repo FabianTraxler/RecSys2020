@@ -24,7 +24,7 @@ conf = SparkConf().setAppName("RecSys-Challenge-Train-Model").setMaster("yarn")
 conf = (conf.set("deploy-mode","cluster")
        .set("spark.driver.memory","100g")
        .set("spark.executor.memory","100g")
-       .set("spark.driver.cores","1")
+       .set("spark.driver.cores","4")
        .set("spark.num.executors","100")
        .set("spark.executor.cores","4")
        .set("spark.driver.maxResultSize", "100g"))
@@ -80,7 +80,7 @@ def load_file(path):
     split_text = pyspark.sql.functions.split(df['present_domains'], '\t')
     df = df.withColumn("present_domains", when(col('present_domains').isNull(), array().cast("array<string>")).otherwise(split_text))
     
-    return train_df
+    return df
 
 def create_quantilesDiscretizer(input_col: str, nq:int) -> QuantileDiscretizer:
     """
@@ -221,6 +221,18 @@ if __name__ == "__main__":
     scaler = StandardScaler(inputCol="features", outputCol="scaledFeatures")
     
 
+    # Encode Respones Columns to 0, 1
+    # Create Random Forest for every response col
+    models = []
+    for column in response_cols:
+        train_df = train_df.withColumn(column, encode_response(column))
+
+        models.append(RandomForestClassifier(labelCol=column, featuresCol="scaledFeatures", numTrees=15)
+                      .setPredictionCol(column+"_pred")
+                      .setRawPredictionCol(column+"_pred_raw")
+                      .setProbabilityCol(column+"_proba"))
+
+    
     # create a list of all transformers
     stages = list()
     stages.extend(quantile_discretizers_numeric)
@@ -229,23 +241,14 @@ if __name__ == "__main__":
     #stages.extend(tweet_countVectorizers)
     stages.append(feature_assambler)
     stages.append(scaler)
+    stages.extend(models)
     # Create Pipeline
     pipeline = Pipeline(stages=stages)
 
     # Fit Pipeline and transform df
-    train_df = pipeline.fit(train_df).transform(train_df)
+    pipeline = pipeline.fit(train_df)
 
-    # Encode Respones Columns to 0, 1
-    # Train Random Forest for every response col
-    for column in response_cols:
-        train_df = train_df.withColumn(column, encode_response(column))
-
-        train = train_df.select("features", column)
-        train = train.withColumnRenamed(colum, "label")
-
-        rf = RandomForestClassifier(labelCol="label", featuresCol="features", numTrees=15)
-        rf.fit(train)
-        rf.save("hdfs:///user/e1553958/RecSys/models/rf/" + column)
-        #rf.save("model/rf/"+column)
+    #pipeline.save("pipeline")
+    pipeline.save("hdfs:///user/e1553958/RecSys/pipeline")
 
     
