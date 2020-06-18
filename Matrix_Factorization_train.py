@@ -61,7 +61,7 @@ def load_file(path):
     train_df = train_df.join(user2id, col("engaging_user_id") == col("user_id_str"))
     train_df = train_df.select("user", "tweet", "reply_timestamp", "retweet_timestamp", "retweet_with_comment_timestamp", "like_timestamp")
     
-    return train_df
+    return train_df, user2id, tweet2id
 
 def encode_response(x):
     '''
@@ -108,7 +108,11 @@ if __name__ == "__main__":
     target_cols = ["reply_timestamp", "retweet_timestamp", "retweet_with_comment_timestamp", "like_timestamp"]
 
     train_file = "hdfs:///user/pknees/RSC20/training.tsv"
-    train_df = load_file(train_file)
+    train_df, user2id, tweet2id = load_file(train_file)
+
+    # save id_mappings to use for evaluation later
+    user2id.write.save('hdfs:///user/e1553958/RecSys/mappings/user2id', format='parquet', mode='append')
+    tweet2id.write.save('hdfs:///user/e1553958/RecSys/mappings/tweet2id', format='parquet', mode='append')
 
     # Encdoe the response to numeric attributes
     for target_col in target_cols:
