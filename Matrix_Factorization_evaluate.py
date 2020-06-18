@@ -12,6 +12,17 @@ from pyspark.sql import Row
 from pyspark.mllib.evaluation import BinaryClassificationMetrics
 from pyspark.sql.functions import  when, col, rand, isnan
 
+# Set Spark Config
+conf = SparkConf().setAppName("RecSys-Challenge-Submission-Generation").setMaster("yarn")
+conf = (conf.set("deploy-mode","cluster")
+       .set("spark.driver.memory","100g")
+       .set("spark.executor.memory","100g")
+       .set("spark.driver.cores","1")
+       .set("spark.num.executors","100")
+       .set("spark.executor.cores","4")
+       .set("spark.driver.maxResultSize", "100g"))
+sc = pyspark.SparkContext(conf=conf)
+sql = SQLContext(sc)
 
 def load_file(path, mappings_path):
     '''
@@ -80,18 +91,6 @@ def fallback_prediction(x):
 
 
 if __name__ == "__main__":
-    # Set Spark Config
-    conf = SparkConf().setAppName("RecSys-Challenge-Submission-Generation").setMaster("yarn")
-    conf = (conf.set("deploy-mode","cluster")
-        .set("spark.driver.memory","100g")
-        .set("spark.executor.memory","100g")
-        .set("spark.driver.cores","1")
-        .set("spark.num.executors","100")
-        .set("spark.executor.cores","4")
-        .set("spark.driver.maxResultSize", "100g"))
-    sc = pyspark.SparkContext(conf=conf)
-    sql = SQLContext(sc)
-
     target_cols = ["reply_timestamp", "retweet_timestamp", "retweet_with_comment_timestamp", "like_timestamp"]
 
     val_file = "hdfs:///user/pknees/RSC20/val.tsv"
