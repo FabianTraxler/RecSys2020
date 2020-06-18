@@ -108,7 +108,7 @@ if __name__ == "__main__":
     target_cols = ["reply_timestamp", "retweet_timestamp", "retweet_with_comment_timestamp", "like_timestamp"]
 
     train_file = "hdfs:///user/pknees/RSC20/training.tsv"
-    train_df = load_file(train_file, target_cols)
+    train_df = load_file(train_file)
 
     # Encdoe the response to numeric attributes
     for target_col in target_cols:
