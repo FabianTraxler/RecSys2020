@@ -94,7 +94,7 @@ if __name__ == "__main__":
     target_cols = ["reply_timestamp", "retweet_timestamp", "retweet_with_comment_timestamp", "like_timestamp"]
 
     val_file = "hdfs:///user/pknees/RSC20/val.tsv"
-    mapping_path = 'hdfs:///user/e1553958/RecSys/mappings/
+    mapping_path = "hdfs:///user/e1553958/RecSys/mappings/"
     val_df = load_file(val_file, mapping_path)
 
     for target_col in target_cols:
