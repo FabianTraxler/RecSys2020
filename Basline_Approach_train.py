@@ -100,7 +100,7 @@ def create_quantilesDiscretizer(input_col: str, nq:int) -> QuantileDiscretizer:
     """
     output_col = input_col + "_encoded"
     return QuantileDiscretizer(numBuckets=nq,
-                                  relativeError=0.,
+                                  relativeError=0.05,
                                   handleInvalid='keep',
                                   inputCol=input_col,
                                   outputCol=output_col)
