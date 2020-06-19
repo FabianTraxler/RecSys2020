@@ -15,7 +15,9 @@ from pyspark.ml.feature import QuantileDiscretizer, StringIndexer, FeatureHasher
 from pyspark.ml import Pipeline, PipelineModel
 
 from pyspark.mllib.evaluation import BinaryClassificationMetrics
-from pyspark.sql.functions import  when, col, rand, isnan, split, array
+from pyspark.sql.functions import  when, col, rand, isnan, split, array, udf
+from pyspark.sql.types import FloatType
+
 
 from pyspark.ml.classification import RandomForestClassifier, RandomForestClassificationModel
 
@@ -99,9 +101,10 @@ if __name__ == "__main__":
     # Fit Pipeline and transform df
     val_df = pipeline.transform(val_df)
 
-
+    get_probability=udf(lambda v:float(v[1]),FloatType())
     for column in response_cols:
         # Write results to file
+        val_df = val_df.withColumn(column, get_probability(column+"_proba"))
         val_df.select("tweet_id", "engaging_user_id",column ).write.option("header", "false").csv("hdfs:///user/e1553958/RecSys/val_result/"+target_col+"_rf")
 
     
