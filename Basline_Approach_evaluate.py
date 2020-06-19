@@ -100,8 +100,8 @@ if __name__ == "__main__":
     val_df = pipeline.transform(val_df)
 
 
-    for target_col in target_cols:
+    for column in response_cols:
         # Write results to file
-        val_df.select("tweet_id", "engaging_user_id",target_col ).write.option("header", "false").csv("hdfs:///user/e1553958/RecSys/val_result/"+target_col+"_rf")
+        val_df.select("tweet_id", "engaging_user_id",column ).write.option("header", "false").csv("hdfs:///user/e1553958/RecSys/val_result/"+target_col+"_rf")
 
     
