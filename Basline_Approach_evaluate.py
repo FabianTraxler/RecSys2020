@@ -101,14 +101,7 @@ if __name__ == "__main__":
 
 
     for target_col in target_cols:
-        # Load model
-        model = ALSModel.load("hdfs:///user/e1553958/RecSys/models/" + target_col + "_als_model")
-        # Get Predictions of the model
-        val_df = models[target_col].transform(val_df)
-        val_df = val_df.withColumnRenamed("prediction", target_col )
-        # Fallback prediction
-        val_df = val_df.withColumn(target_col, fallback_prediction(target_col))
         # Write results to file
-        val_df.select("tweet_id", "engaging_user_id",target_col ).write.option("header", "false").csv("hdfs:///user/e1553958/RecSys/val_result/"+target_col)
+        val_df.select("tweet_id", "engaging_user_id",target_col ).write.option("header", "false").csv("hdfs:///user/e1553958/RecSys/val_result/"+target_col+"_rf")
 
     
