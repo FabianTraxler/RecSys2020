@@ -22,12 +22,12 @@ from pyspark.ml.classification import RandomForestClassifier
 # Set Spark Config
 conf = SparkConf().setAppName("RecSys-Challenge-Train-Model").setMaster("yarn")
 conf = (conf.set("deploy-mode","cluster")
-       .set("spark.driver.memory","100g")
-       .set("spark.executor.memory","100g")
+       .set("spark.driver.memory","200g")
+       .set("spark.executor.memory","200g")
        .set("spark.driver.cores","1")
-       .set("spark.num.executors","100")
+       .set("spark.num.executors","500")
        .set("spark.executor.cores","1")
-       .set("spark.driver.maxResultSize", "100g"))
+       .set("spark.driver.maxResultSize", "200g"))
 sc = pyspark.SparkContext(conf=conf)
 sql = SQLContext(sc)
 
