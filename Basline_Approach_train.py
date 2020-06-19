@@ -11,7 +11,7 @@ from pyspark.ml.feature import StringIndexer
 from pyspark.ml.evaluation import RegressionEvaluator
 from pyspark.sql import Row
 
-from pyspark.ml.feature import QuantileDiscretizer, StringIndexer, FeatureHasher, OneHotEncoderEstimator, CountVectorizer,PCA, VectorAssembler
+from pyspark.ml.feature import StandardScaler, QuantileDiscretizer, StringIndexer, FeatureHasher, OneHotEncoderEstimator, CountVectorizer,PCA, VectorAssembler
 from pyspark.ml import Pipeline
 
 from pyspark.mllib.evaluation import BinaryClassificationMetrics
