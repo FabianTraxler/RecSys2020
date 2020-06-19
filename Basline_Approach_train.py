@@ -199,7 +199,7 @@ if __name__ == "__main__":
                         'present_links', 
                         'present_domains']
     
-    nq = 50 # number of quantiles to use
+    nq = 30 # number of quantiles to use
 
     # Encode Numeric Features (5.3.1)
     quantile_discretizers_numeric = [ create_quantilesDiscretizer(col, nq) for col in numeric_cols ]
