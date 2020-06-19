@@ -17,7 +17,7 @@ from pyspark.ml import Pipeline
 from pyspark.mllib.evaluation import BinaryClassificationMetrics
 from pyspark.sql.functions import  when, col, rand, isnan, split, array
 
-from pyspark.ml.classification import GBTClassifier
+from pyspark.ml.classification import GBTClassifier, GBTClassificationModel
 
 # Set Spark Config
 conf = SparkConf().setAppName("RecSys-Challenge-Train-Model").setMaster("yarn")
