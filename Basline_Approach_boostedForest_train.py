@@ -228,9 +228,7 @@ if __name__ == "__main__":
         train_df = train_df.withColumn(column, encode_response(column))
 
         models.append(GBTClassifier(labelCol=column, featuresCol="scaledFeatures", maxDepth=10, seed=0)
-                      .setPredictionCol(column+"_pred")
-                      .setRawPredictionCol(column+"_pred_raw")
-                      .setProbabilityCol(column+"_proba"))
+                      .setPredictionCol(column+"_pred"))
 
     
     # create a list of all transformers
