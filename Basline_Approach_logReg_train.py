@@ -231,8 +231,8 @@ if __name__ == "__main__":
                                             maxIter=1000,
                                             regParam=0.001,
                                             predictionCol=column + '_pred', 
-                                            probabilityCol=column + '_prob',
-                                            rawPredictionCol=column + '_rawRred'))
+                                            probabilityCol=column + '_proba',
+                                            rawPredictionCol=column + '_pred_raw'))
 
     
     # create a list of all transformers
