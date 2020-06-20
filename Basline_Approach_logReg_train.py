@@ -17,7 +17,7 @@ from pyspark.ml import Pipeline
 from pyspark.mllib.evaluation import BinaryClassificationMetrics
 from pyspark.sql.functions import  when, col, rand, isnan, split, array
 
-from pyspark.ml.classification import GBTClassifier, GBTClassificationModel
+from pyspark.ml.classification import LogisticRegression
 
 # Set Spark Config
 conf = SparkConf().setAppName("RecSys-Challenge-Train-Model").setMaster("yarn")
@@ -26,7 +26,7 @@ conf = (conf.set("deploy-mode","cluster")
        .set("spark.executor.memory","100g")
        .set("spark.driver.cores","1")
        .set("spark.num.executors","50")
-       .set("spark.executor.cores","10")
+       .set("spark.executor.cores","5")
        .set("spark.driver.maxResultSize", "100g"))
 sc = pyspark.SparkContext(conf=conf)
 sql = SQLContext(sc)
@@ -227,8 +227,12 @@ if __name__ == "__main__":
     for column in response_cols:
         train_df = train_df.withColumn(column, encode_response(column))
 
-        models.append(GBTClassifier(labelCol=column, featuresCol="scaledFeatures", maxDepth=10, seed=0)
-                      .setPredictionCol(column+"_pred"))
+        models.append(LogisticRegression(labelCol=column, featuresCol="scaledFeatures",
+                                            family="binominal", maxIter=1000,
+                                            regParam=0.001,
+                                            predictionCol=column + '_pred', 
+                                            probabilityCol=column + '_prob',
+                                            rawPredictionCol=column + '_rawRred'))
 
     
     # create a list of all transformers
@@ -247,6 +251,6 @@ if __name__ == "__main__":
     pipeline = pipeline.fit(train_df)
 
     #pipeline.save("pipeline")
-    pipeline.save("hdfs:///user/e1553958/RecSys/pipeline_boosted")
+    pipeline.save("hdfs:///user/e1553958/RecSys/pipeline_logReg")
 
     
