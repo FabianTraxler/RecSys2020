@@ -96,7 +96,7 @@ if __name__ == "__main__":
                     ]
 
     #pipeline = Pipeline.load("pipeline")
-    pipeline = PipelineModel.load("hdfs:///user/e1553958/RecSys/pipeline")
+    pipeline = PipelineModel.load("hdfs:///user/e1553958/RecSys/pipeline_logReg")
 
     # Fit Pipeline and transform df
     val_df = pipeline.transform(val_df)
@@ -105,6 +105,6 @@ if __name__ == "__main__":
     for column in response_cols:
         # Write results to file
         val_df = val_df.withColumn(column, get_probability(column+"_proba"))
-        val_df.select("tweet_id", "engaging_user_id",column ).write.option("header", "false").csv("hdfs:///user/e1553958/RecSys/val_result_rf/"+column)
+        val_df.select("tweet_id", "engaging_user_id",column ).write.option("header", "false").csv("hdfs:///user/e1553958/RecSys/val_result_logReg/"+column)
 
     
