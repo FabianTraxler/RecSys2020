@@ -228,7 +228,7 @@ if __name__ == "__main__":
         train_df = train_df.withColumn(column, encode_response(column))
 
         models.append(LogisticRegression(labelCol=column, featuresCol="scaledFeatures",
-                                            family="binominal", maxIter=1000,
+                                            maxIter=1000,
                                             regParam=0.001,
                                             predictionCol=column + '_pred', 
                                             probabilityCol=column + '_prob',
