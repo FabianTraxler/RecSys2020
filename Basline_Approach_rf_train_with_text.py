@@ -227,7 +227,7 @@ if __name__ == "__main__":
     # Encode ID Features (5.3.3)
     id_feature_hashers = [ create_featureHasher(col, nq) for col in id_cols]
     # Encode Tweet Features (5.3.4 + 5.3.5)
-    tweet_countVectorizers = [ create_countVectorizer(col) for col in tweet_feature_cols if col != 'text_tokens']
+    tweet_countVectorizers = [ create_countVectorizer(col) for col in tweet_feature_cols if col != 'text']
     doc2vecs = [ create_word2Vec(col + "_tokens") for col in tweet_feature_cols ]
 
     encoded_columns = [ col + "_encoded" for col in numeric_cols ]
