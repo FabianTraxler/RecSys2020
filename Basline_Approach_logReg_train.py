@@ -170,7 +170,7 @@ def encode_response(x):
     return when(col(x).isNull(), float(0)).otherwise(float(1))
 
 if __name__ == "__main__":
-    train_file = "hdfs:///user/pknees/RSC20/training.tsv"
+    train_file = "hdfs:///user/e1553958/RSC20/training.tsv"
     #train_file = "data/training_sample.tsv"
     train_df = load_file(train_file)
 

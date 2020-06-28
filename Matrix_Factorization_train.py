@@ -107,7 +107,7 @@ def train_model(df, target_col, parameters, path):
 if __name__ == "__main__":
     target_cols = ["reply_timestamp", "retweet_timestamp", "retweet_with_comment_timestamp", "like_timestamp"]
 
-    train_file = "hdfs:///user/pknees/RSC20/training.tsv"
+    train_file = "hdfs:///user/e1553958/RSC20/training.tsv"
     train_df, user2id, tweet2id = load_file(train_file)
 
     # save id_mappings to use for evaluation later
@@ -125,7 +125,7 @@ if __name__ == "__main__":
         "regParam": 0.001,
         "rank": 20
     }
-    model_path = "hdfs:///user/e1553958/RecSys/models/"
+    model_path = "hdfs:///user/e1553958/RecSys/datasplit/models/"
     for target_col in target_cols: # Train models
         target_col = target_col[:-10]
         train_model(train_df, target_col, parameters, model_path)
