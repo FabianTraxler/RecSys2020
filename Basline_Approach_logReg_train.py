@@ -251,6 +251,6 @@ if __name__ == "__main__":
     pipeline = pipeline.fit(train_df)
 
     #pipeline.save("pipeline")
-    pipeline.save("hdfs:///user/e1553958/RecSys/pipeline_logReg")
+    pipeline.save("hdfs:///user/e1553958/RecSys/datasplit/pipeline_logReg")
 
     
