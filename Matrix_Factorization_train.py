@@ -111,8 +111,8 @@ if __name__ == "__main__":
     train_df, user2id, tweet2id = load_file(train_file)
 
     # save id_mappings to use for evaluation later
-    user2id.write.save('hdfs:///user/e1553958/RecSys/mappings/user2id', format='parquet', mode='append')
-    tweet2id.write.save('hdfs:///user/e1553958/RecSys/mappings/tweet2id', format='parquet', mode='append')
+    user2id.write.save('hdfs:///user/e1553958/RecSys/datasplit/mappings/user2id', format='parquet', mode='append')
+    tweet2id.write.save('hdfs:///user/e1553958/RecSys/datasplit/mappings/tweet2id', format='parquet', mode='append')
 
     # Encdoe the response to numeric attributes
     for target_col in target_cols:
